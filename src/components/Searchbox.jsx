@@ -3,16 +3,22 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 
 const Searchbox = ({ getData }) => {
-  let [city, setCity] = useState("");
-  let [error, setError] = useState("");
-  let API_URL = "https://api.openweathermap.org/data/2.5/weather?units=metric&";
-  let API_KEY = "1ccbc564340c43655f5d22dbd7a6d7e4";
+  const [city, setCity] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  let getWeatherInfo = async () => {
+  const API_URL =
+    "https://api.openweathermap.org/data/2.5/weather?units=metric&";
+  const API_KEY = "1ccbc564340c43655f5d22dbd7a6d7e4";
+
+  const getWeatherInfo = async () => {
     try {
-      let res = await fetch(`${API_URL}q=${city}&appid=${API_KEY}`);
-      let data = await res.json();
-      let resultObj = {
+      setLoading(true); // 🔹 Start loading
+      const res = await fetch(`${API_URL}q=${city}&appid=${API_KEY}`);
+      if (!res.ok) throw new Error("City not found");
+      const data = await res.json();
+
+      const resultObj = {
         city: city,
         temp: data.main.temp,
         tempMin: data.main.temp_min,
@@ -21,22 +27,28 @@ const Searchbox = ({ getData }) => {
         weather: data.weather[0].description,
         feelsLike: data.main.feels_like,
       };
-      setError("")
-      console.log(resultObj);
+
+      setError("");
       getData(resultObj);
-    } catch (error) {
-      setError("No such place in our api");
+    } catch (err) {
+      setError("No such place in our API");
+    } finally {
+      setLoading(false); // 🔹 Stop loading
     }
   };
-  function handleChange(e) {
-    setCity(e.target.value);
-  }
-  function handleSubmit(e) {
+
+  const handleChange = (e) => setCity(e.target.value);
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(city);
+    if (!city) {
+      setError("Please enter a city");
+      return;
+    }
     setCity("");
     getWeatherInfo();
-  }
+  };
+
   return (
     <div>
       <form
@@ -51,16 +63,20 @@ const Searchbox = ({ getData }) => {
           onChange={handleChange}
           className="w-full sm:w-auto bg-white rounded-md"
         />
-        <h2 className="text-red-800 bold">{error}</h2>
 
         <Button
           variant="contained"
           type="submit"
-          className="!bg-gradient-to-r !from-blue-500 !to-indigo-600 !text-white !font-semibold !px-6 !py-2 !rounded-lg !shadow-lg hover:!scale-105 transition-transform"
+          disabled={loading}
+          className="!bg-gradient-to-r !from-blue-500 !to-indigo-600 !text-white !font-semibold !px-6 !py-2 !rounded-lg !shadow-lg hover:!scale-105 transition-transform disabled:opacity-70"
         >
-          Search
+          {loading ? "Searching..." : "Search"}
         </Button>
       </form>
+
+      {error && (
+        <h2 className="text-red-600 font-bold text-center mt-3">{error}</h2>
+      )}
     </div>
   );
 };
